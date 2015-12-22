@@ -1,12 +1,9 @@
-import scrapy, re
+import scrapy
 
 from scrapy import log
 
 from distantPlaying.items import MobyItem
-
-def clean_html(text):
-    TAG_RE = re.compile(r'<[^>]+>')
-    return TAG_RE.sub('', text).replace(u'\xa0', u' ')
+from distantPlaying.lib import clean_html
 
 class MobySpider(scrapy.Spider):
     name = "moby"
