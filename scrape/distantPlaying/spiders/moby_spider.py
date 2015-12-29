@@ -25,10 +25,10 @@ class MobySpider(scrapy.Spider):
         item['body'] = response.body
         item['link'] = response.url
         item['description'] = clean_html(response.body.split('<h2>Description</h2>')[1].split('<div class="sideBarLinks">')[0])
-        item['publishedBy'] = clean_html(response.xpath('//div[contains(text(), "Published by")]/following-sibling::div[1]/a/text()').extract()[0]).split(',')
-        item['developedBy'] = clean_html(response.xpath('//div[contains(text(), "Developed by")]/following-sibling::div[1]/a/text()').extract()[0]).split(',')
-        item['released'] = clean_html(response.xpath('//div[contains(text(), "Released")]/following-sibling::div[1]/a/text()').extract()[0]).split(',')
-        item['platforms'] = clean_html(response.xpath('//div[contains(text(), "Platforms")]/following-sibling::div[1]/a/text()').extract()[0]).split(',')
+        item['publishedBy'] = map(clean_html, response.xpath('//div[contains(text(), "Published by")]/following-sibling::div[1]/a/text()').extract())
+        item['developedBy'] = map(clean_html, response.xpath('//div[contains(text(), "Developed by")]/following-sibling::div[1]/a/text()').extract())
+        item['released'] = clean_html(response.xpath('//div[contains(text(), "Released")]/following-sibling::div[1]/a/text()').extract()[0])
+        item['platforms'] = map(clean_html, response.xpath('//div[contains(text(), "Platforms")]/following-sibling::div[1]/a/text()').extract())
         # item['genre'] = 
         # item['perspective'] = 
         # item['theme'] = 
@@ -39,6 +39,6 @@ class MobySpider(scrapy.Spider):
                 '\n'+item['publishedBy']+
                 '\n'+item['developedBy']+
                 '\n'+item['released']+
-                '\n'+item['platforms']+
+                '\n'+str(item['platforms'])+
                 '\n', level=log.INFO)
         yield item
