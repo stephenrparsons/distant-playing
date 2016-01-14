@@ -1,9 +1,10 @@
-import scrapy
-
-from scrapy import log
+import scrapy, sys
 
 from distantPlaying.items import MobyItem
 from distantPlaying.lib import clean_html
+
+reload(sys)
+sys.setdefaultencoding('utf8')
 
 class MobySpider(scrapy.Spider):
     name = "moby"
@@ -28,17 +29,22 @@ class MobySpider(scrapy.Spider):
         item['publishedBy'] = map(clean_html, response.xpath('//div[contains(text(), "Published by")]/following-sibling::div[1]/a/text()').extract())
         item['developedBy'] = map(clean_html, response.xpath('//div[contains(text(), "Developed by")]/following-sibling::div[1]/a/text()').extract())
         item['released'] = clean_html(response.xpath('//div[contains(text(), "Released")]/following-sibling::div[1]/a/text()').extract()[0])
-        item['platforms'] = map(clean_html, response.xpath('//div[contains(text(), "Platforms")]/following-sibling::div[1]/a/text()').extract())
-        # item['genre'] = 
-        # item['perspective'] = 
-        # item['theme'] = 
-        # item['misc'] = 
+        item['platforms'] = map(clean_html, response.xpath('//div[contains(text(), "Platform")]/following-sibling::div[1]/a/text()').extract())
+        item['genre'] = map(clean_html, response.xpath('//div[contains(text(), "Genre")]/following-sibling::div[1]/a/text()').extract())
+        item['perspective'] = map(clean_html, response.xpath('//div[contains(text(), "Perspective")]/following-sibling::div[1]/a/text()').extract())
+        item['theme'] = map(clean_html, response.xpath('//div[contains(text(), "Theme")]/following-sibling::div[1]/a/text()').extract())
+        item['misc'] = map(clean_html, response.xpath('//div[contains(text(), "Misc")]/following-sibling::div[1]/a/text()').extract())
+        # item['ratings'] = 
         item['title'] = response.xpath("//h1/a/text()").extract()[0]
-        log.msg(item['title']+ \
-                '\n'+item['description']+
-                '\n'+item['publishedBy']+
-                '\n'+item['developedBy']+
-                '\n'+item['released']+
-                '\n'+str(item['platforms'])+
-                '\n', level=log.INFO)
+        # self.logger.info('\nTitle: '+item['title']+
+        #         '\nDescription: '+item['description']+
+        #         '\nPublished by: '+unicode(item['publishedBy'])+
+        #         '\nDeveloped by: '+unicode(item['developedBy'])+
+        #         '\nReleased: '+item['released']+
+        #         '\nPlatforms: '+unicode(item['platforms'])+
+        #         '\nGenre: '+unicode(item['genre'])+
+        #         '\nPerspective: '+unicode(item['perspective'])+
+        #         '\nTheme: '+unicode(item['theme'])+
+        #         '\nMisc: '+unicode(item['misc'])+
+        #         '\n')
         yield item
