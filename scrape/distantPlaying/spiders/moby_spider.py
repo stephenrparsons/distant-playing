@@ -1,10 +1,7 @@
-import scrapy, sys
+import scrapy
 
 from distantPlaying.items import MobyItem
 from distantPlaying.lib import clean_html
-
-reload(sys)
-sys.setdefaultencoding('utf8')
 
 class MobySpider(scrapy.Spider):
     name = "moby"

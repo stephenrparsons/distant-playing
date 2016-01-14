@@ -1,3 +1,4 @@
+
 # -*- coding: utf-8 -*-
 
 # Define here the models for your scraped items
@@ -20,3 +21,4 @@ class MobyItem(scrapy.Item):
     theme = scrapy.Field()
     misc = scrapy.Field()
     body = scrapy.Field()
+    ratings = scrapy.Field()

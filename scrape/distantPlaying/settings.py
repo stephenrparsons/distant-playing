@@ -95,3 +95,8 @@ DOWNLOAD_HANDLERS = {
 
 # stop printing all items
 LOG_LEVEL="INFO"
+
+# Deal with weird non ascii characters from scrape
+import sys
+reload(sys)
+sys.setdefaultencoding('utf8')
