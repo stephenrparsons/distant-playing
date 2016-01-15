@@ -33,6 +33,7 @@ class MobySpider(scrapy.Spider):
         item['misc'] = map(clean_html, response.xpath('//div[contains(text(), "Misc")]/following-sibling::div[1]/a/text()').extract())
         # item['ratings'] = 
         item['title'] = response.xpath("//h1/a/text()").extract()[0]
+        self.logger.info(item['title'])
         # self.logger.info('\nTitle: '+item['title']+
         #         '\nDescription: '+item['description']+
         #         '\nPublished by: '+unicode(item['publishedBy'])+
