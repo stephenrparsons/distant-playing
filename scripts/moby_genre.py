@@ -51,14 +51,16 @@ def showPercentagesOverTime(field):
                 if fields[i] in dataDict[years[j]].keys():
                     dataArray[i][j] = dataDict[years[j]][fields[i]]
 
-    fig, ax = plt.subplots(1)
-
+    fig = plt.figure()
+    ax = fig.add_axes([0.1, 0.1, 0.6, 0.75])
     y = np.row_stack(dataArray)
     percent = y / y.sum(axis=0).astype(float)*100
     ax.stackplot(years, percent, labels=fields)
     ax.margins(0,0)
-    # move the upper left edge of the legend relative to axes coordinates
-    ax.legend(loc='upper left', bbox_to_anchor=[1,1])
+    # move the upper left edge of the legend relative to axes
+    # coordinates and reverse the label order
+    handles, labels = ax.get_legend_handles_labels()
+    ax.legend(handles[::-1], labels[::-1], loc='upper left', bbox_to_anchor=[1,1])
     ax.set_title(field + ' shares over time')
     ax.set_ylabel('Percent of total games (%)')
     ax.set_xlabel('Year')
@@ -68,6 +70,8 @@ def showPercentagesOverTime(field):
     plt.show()
 
 # showGamesPerYear()
+# showPercentagesOverTime('publishedBy')
+# showPercentagesOverTime('developedBy')
 showPercentagesOverTime('genre')
 showPercentagesOverTime('theme')
 showPercentagesOverTime('perspective')
