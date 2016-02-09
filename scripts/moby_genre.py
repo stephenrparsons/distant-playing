@@ -25,7 +25,7 @@ def showGamesPerYear():
 
     plt.show()
 
-# graph a moby database field (str) over time
+# graph a moby database field (str) over time in a 100% stacked plot
 def showPercentagesOverTime(field):
     cursor = collection.aggregate([
         {'$unwind': '$'+field},
@@ -57,7 +57,8 @@ def showPercentagesOverTime(field):
     percent = y / y.sum(axis=0).astype(float)*100
     ax.stackplot(years, percent, labels=fields)
     ax.margins(0,0)
-    ax.legend()
+    # move the upper left edge of the legend relative to axes coordinates
+    ax.legend(loc='upper left', bbox_to_anchor=[1,1])
     ax.set_title(field + ' shares over time')
     ax.set_ylabel('Percent of total games (%)')
     ax.set_xlabel('Year')
