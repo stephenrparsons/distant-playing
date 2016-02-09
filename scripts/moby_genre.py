@@ -1,7 +1,6 @@
 from pymongo import MongoClient
 import numpy as np
 import matplotlib.pyplot as plt
-import csv
 
 client = MongoClient()
 db = client['items']
@@ -26,87 +25,48 @@ def showGamesPerYear():
 
     plt.show()
 
-# graph genres over time
-def showGenresOverTime():
+# graph a moby database field (str) over time
+def showPercentagesOverTime(field):
     cursor = collection.aggregate([
-        {'$unwind': '$genre'},
-        {'$group': {'_id': {'year': '$year', 'genre': '$genre'}, 'total': {'$sum': 1}}},
+        {'$unwind': '$'+field},
+        {'$group': {'_id': {'year': '$year', 'field': '$'+field}, 'total': {'$sum': 1}}},
     ])
 
     # If a game has multiple genres, each one is given equal
     # weight. This could (maybe should) be reconsidered.
-    genresOverTime = sorted([[record['_id'], record['total']] for record in cursor])
-    years = sorted(list(set([record[0]['year'] for record in genresOverTime])))
-    genres = sorted(list(set([record[0]['genre'] for record in genresOverTime])))
+    fieldsOverTime = sorted([[record['_id'], record['total']] for record in cursor])
+    years = sorted(list(set([record[0]['year'] for record in fieldsOverTime])))
+    fields = sorted(list(set([record[0]['field'] for record in fieldsOverTime])))
 
     dataDict = {}
-    for record in genresOverTime:
+    for record in fieldsOverTime:
         if record[0]['year'] not in dataDict.keys():
             dataDict[record[0]['year']] = {}
-        dataDict[record[0]['year']][record[0]['genre']] = record[1]
+        dataDict[record[0]['year']][record[0]['field']] = record[1]
 
-    dataArray = [[0 for j in range(len(years))] for i in range(len(genres))]
-    for i in range(len(genres)):
+    dataArray = [[0 for j in range(len(years))] for i in range(len(fields))]
+    for i in range(len(fields)):
         for j in range(len(years)):
             if years[j] in dataDict.keys():
-                if genres[i] in dataDict[years[j]].keys():
-                    dataArray[i][j] = dataDict[years[j]][genres[i]]
+                if fields[i] in dataDict[years[j]].keys():
+                    dataArray[i][j] = dataDict[years[j]][fields[i]]
 
     fig, ax = plt.subplots(1)
 
     y = np.row_stack(dataArray)
     percent = y / y.sum(axis=0).astype(float)*100
-    ax.stackplot(years, percent)
+    ax.stackplot(years, percent, labels=fields)
     ax.margins(0,0)
-    ax.set_title("Genre shares over time")
+    ax.legend()
+    ax.set_title(field + ' shares over time')
     ax.set_ylabel('Percent of total games (%)')
     ax.set_xlabel('Year')
 
     fig.autofmt_xdate()
 
     plt.show()
-
-# graph themes over time
-def showThemesOverTime():
-    cursor = collection.aggregate([
-        {'$unwind': '$theme'},
-        {'$group': {'_id': {'year': '$year', 'theme': '$theme'}, 'total': {'$sum': 1}}},
-    ])
-
-    # If a game has multiple themes, each one is given equal
-    # weight. This could (maybe should) be reconsidered.
-    themesOverTime = sorted([[record['_id'], record['total']] for record in cursor])
-    years = sorted(list(set([record[0]['year'] for record in themesOverTime])))
-    themes = sorted(list(set([record[0]['theme'] for record in themesOverTime])))
-
-    dataDict = {}
-    for record in themesOverTime:
-        if record[0]['year'] not in dataDict.keys():
-            dataDict[record[0]['year']] = {}
-        dataDict[record[0]['year']][record[0]['theme']] = record[1]
-
-    dataArray = [[0 for j in range(len(years))] for i in range(len(themes))]
-    for i in range(len(themes)):
-        for j in range(len(years)):
-            if years[j] in dataDict.keys():
-                if themes[i] in dataDict[years[j]].keys():
-                    dataArray[i][j] = dataDict[years[j]][themes[i]]
-
-    fig, ax = plt.subplots(1)
-
-    y = np.row_stack(dataArray)
-    percent = y / y.sum(axis=0).astype(float)*100
-    ax.stackplot(years, percent)
-    ax.margins(0,0)
-    ax.set_title("Theme shares over time")
-    ax.set_ylabel('Percent of total games (%)')
-    ax.set_xlabel('Year')
-
-    fig.autofmt_xdate()
-
-    plt.show()
-
 
 # showGamesPerYear()
-showGenresOverTime()
-showThemesOverTime()
+showPercentagesOverTime('genre')
+showPercentagesOverTime('theme')
+showPercentagesOverTime('perspective')
