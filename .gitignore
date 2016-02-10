@@ -1,3 +1,4 @@
 *.pyc
 crawls/
 backups/
+models/
