@@ -69,9 +69,13 @@ def showPercentagesOverTime(field):
 
     plt.show()
 
-# showGamesPerYear()
+# These might work but there are too many publishers and developers so
+# matplotlib crashes with current implementation.
 # showPercentagesOverTime('publishedBy')
 # showPercentagesOverTime('developedBy')
+
+showGamesPerYear()
 showPercentagesOverTime('genre')
 showPercentagesOverTime('theme')
 showPercentagesOverTime('perspective')
+showPercentagesOverTime('platforms')
