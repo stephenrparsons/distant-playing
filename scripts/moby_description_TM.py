@@ -117,6 +117,40 @@ def display_topics():
         print '#' + str(i) + ': ' + str(topic)
         i += 1
 
+class Predict():
+    def __init__(self, dictionary_path, lda_model_path):
+        self.dictionary = gensim.corpora.Dictionary.load(dictionary_path)
+        self.lda = gensim.models.LdaModel.load(lda_model_path)
+
+    def run(self, record):
+        words_to_use = record['words_to_use']
+        new_desc_bow = self.dictionary.doc2bow(words_to_use)
+        new_desc_lda = self.lda[new_desc_bow]
+        
+        return new_desc_lda
+
+def predict_topics():
+    desc_cursor = desc_collection.find(modifiers={'$snapshot': True})
+    predict = Predict(dictionary_path, lda_model_path)
+    lda = gensim.models.LdaModel.load(lda_model_path)
+    dictionary = gensim.corpora.Dictionary.load(dictionary_path)
+    
+    for record in desc_cursor:
+        print ''
+        print record['description']
+        print ''
+
+        topics = predict.run(record)
+        topic_list = []
+        for (topic_id, topic_weight) in topics:
+            terms = lda.get_topic_terms(topic_id)
+            topic_list.append((topic_weight, [dictionary.get(term[0]) for term in terms]))
+        topic_list = sorted(topic_list, reverse=True)
+        for topic in topic_list:
+            print topic
+
+        x = raw_input()
+
 if __name__ == '__main__':
     logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
     dictionary_path = 'models/dictionary.dict'
@@ -124,7 +158,8 @@ if __name__ == '__main__':
     lda_num_topics = 50
     lda_model_path = "models/lda_model_50_topics.lda"
 
-    tag_descriptions()
-    create_corpus()
-    train_corpus()
-    display_topics()
+    # tag_descriptions()
+    # create_corpus()
+    # train_corpus()
+    # display_topics()
+    predict_topics()
