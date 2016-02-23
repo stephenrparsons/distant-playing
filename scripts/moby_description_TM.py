@@ -5,14 +5,10 @@ import nltk, time, logging, gensim
 
 client = MongoClient()
 desc_collection = client['items']['moby_items']
-tags_collection = client['tags']['moby_description_tags']
-corpus_collection = client['tags']['moby_description_corpus']
 
 def tag_descriptions():
-    desc_cursor = desc_collection.find({}, {'title': 1, 'description': 1, 'year': 1})
+    desc_cursor = desc_collection.find(modifiers={'$snapshot': True})
     desc_count = desc_cursor.count()
-    # not sure if I need the below, will enable if I do
-    # descCursor.batch_size(1000)
 
     # could consider another stopwords list
     stopwords = nltk.corpus.stopwords.words('english')
@@ -24,7 +20,7 @@ def tag_descriptions():
 
     for record in desc_cursor:
         words = []
-        sentences = nltk.sent_tokenize(record["description"].lower())
+        sentences = nltk.sent_tokenize(record['description'].lower())
 
         for sentence in sentences:
             tokens = nltk.word_tokenize(sentence)
@@ -34,13 +30,7 @@ def tag_descriptions():
             for word, tag in tagged_text:
                 words.append({'word': word, 'pos': tag})
 
-        tag_document = {
-            'year': record['year'],
-            'text': record['description'],
-            'words': words,
-        }
-    
-        tags_collection.insert(tag_document)
+        desc_collection.update_one({'_id': record['_id']}, {'$set': {'words': words}})
     
         done += 1
         if done % 1000 == 0:
@@ -48,7 +38,7 @@ def tag_descriptions():
             print 'Done ' + str(done) + ' out of ' + str(desc_count) + ' in ' + str((end - start))
 
 def create_corpus():
-    desc_cursor = tags_collection.find()
+    desc_cursor = desc_collection.find(modifiers={'$snapshot': True})
     desc_count = desc_cursor.count()
     
     lem = nltk.stem.wordnet.WordNetLemmatizer()
@@ -57,19 +47,14 @@ def create_corpus():
     start = time.time()
 
     for record in desc_cursor:
-        nouns = []
+        words_to_use = []
+        # select only nouns
         words = [word for word in record['words'] if word['pos'] in ['NN', 'NNS']]
 
         for word in words:
-            nouns.append(lem.lemmatize(word['word']))
+            words_to_use.append(lem.lemmatize(word['word']))
 
-        corpus_document = {
-            'year': record['year'],
-            'text': record['text'],
-            'words': nouns,
-        }
-
-        corpus_collection.insert(corpus_document)
+        desc_collection.update_one({'_id': record['_id']}, {'$set': {'words_to_use': words_to_use}})
 
         done += 1
         if done % 1000 == 0:
@@ -85,7 +70,7 @@ class Corpus(object):
     def __iter__(self):
         self.cursor.rewind()
         for desc in self.cursor:
-            yield self.desc_dictionary.doc2bow(desc['words'])
+            yield self.desc_dictionary.doc2bow(desc['words_to_use'])
 
     def serialize(self):
         gensim.corpora.BleiCorpus.serialize(self.corpus_path, self, id2word=self.desc_dictionary)
@@ -98,7 +83,7 @@ class Dictionary(object):
 
     def build(self):
         self.cursor.rewind()
-        dictionary = gensim.corpora.Dictionary(desc["words"] for desc in self.cursor)
+        dictionary = gensim.corpora.Dictionary(desc['words_to_use'] for desc in self.cursor)
         dictionary.filter_extremes(keep_n=10000)
         dictionary.compactify()
         gensim.corpora.Dictionary.save(dictionary, self.dictionary_path)
@@ -115,14 +100,8 @@ class Train:
         lda.save(lda_model_path)
         return lda
 
-logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
-dictionary_path = 'models/dictionary.dict'
-corpus_path = "models/corpus.lda-c"
-lda_num_topics = 50
-lda_model_path = "models/lda_model_50_topics.lda"
-
 def train_corpus():
-    desc_cursor = corpus_collection.find()
+    desc_cursor = desc_collection.find(modifiers={'$snapshot': True})
 
     dictionary = Dictionary(desc_cursor, dictionary_path).build()
     Corpus(desc_cursor, dictionary, corpus_path).serialize()
@@ -138,4 +117,14 @@ def display_topics():
         print '#' + str(i) + ': ' + str(topic)
         i += 1
 
-display_topics()
+if __name__ == '__main__':
+    logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
+    dictionary_path = 'models/dictionary.dict'
+    corpus_path = "models/corpus.lda-c"
+    lda_num_topics = 50
+    lda_model_path = "models/lda_model_50_topics.lda"
+
+    tag_descriptions()
+    create_corpus()
+    train_corpus()
+    display_topics()
