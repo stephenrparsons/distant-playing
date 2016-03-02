@@ -190,7 +190,7 @@ def output_vis_files():
     
     meta = []
     for record in desc_cursor:
-        entry = [record['_id'], record['title'], record['publishedBy'], record['developedBy'], '', '', record['year'], '']
+        entry = [record['_id'], record['title'], record['publishedBy'], record['developedBy'], record['description'], '', record['year'], '']
         
         meta.append([clean(item) for item in entry])
 

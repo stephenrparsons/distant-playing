@@ -13,12 +13,7 @@ view.doc = function (p) {
         .html(bib.citation(p.meta));
 
     div.select("#doc_remark")
-        .html(p.total_tokens + " tokens. "
-                + '<a class ="external" href="'
-                + view.doc.uri(p.meta)
-                + '">View '
-                + p.meta.doi
-                + " on JSTOR</a>");
+        .html(p.total_tokens + " tokens.");
 
     trs = div.select("table#doc_topics tbody")
         .selectAll("tr")

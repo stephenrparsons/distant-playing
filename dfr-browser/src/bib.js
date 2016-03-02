@@ -3,44 +3,7 @@
 var bib = { };
 
 bib.doc_author = function (doc) {
-    var lead,
-        lead_trail,
-        result;
-
-    if (doc.authors.length > 0) {
-        lead = doc.authors[0].replace(/,/g, "").split(" ");
-        // check for Jr., Sr., 2nd, etc.
-        // Can mess up if last name is actually the letter I, X, or V.
-        lead_trail = lead.pop();
-        if (lead.length >= 2
-                && (lead_trail.search(/^(\d|Jr|Sr|[IXV]+$)/) !== -1)) {
-            result = lead.pop().replace(/_$/, "");
-            lead_trail = ", " + lead_trail.replace(/\W*$/, "");
-        } else {
-            result = lead_trail;
-            lead_trail = "";
-        }
-        result += ", " + lead.join(" ") + lead_trail;
-        if (doc.authors.length > 1) {
-            // "et al" is better for real bibliography, but it's
-            // actually worth being able to search all the multiple authors
-            /*if (doc.authors.length > 3) {
-                result += ", " + doc.authors.slice(1, 3).join(", ");
-                result += "et al.";
-            } else {*/
-            if (doc.authors.length > 2) {
-                result += ", ";
-                result += doc.authors
-                    .slice(1, doc.authors.length - 1)
-                    .join(", ");
-            }
-            result += ", and " + doc.authors[doc.authors.length - 1];
-        }
-    } else {
-        result = "[Anon]";
-    }
-
-    return result;
+    return "Published by " + JSON.parse(JSON.stringify(doc.authors[0].replace(/'/g, '').replace(/[\[\]']+/g, '')));
 };
 
 // bibliography sorting
@@ -201,19 +164,14 @@ bib.sort.dir = function (p) {
 };
 
 bib.citation = function (doc) {
-    var result = bib.doc_author(doc);
+    var result = "";
 
     // don't duplicate trailing period on middle initial etc.
-    result = result.replace(/\.?$/, ". ");
-    result += '"' + doc.title + '."';
-    result += " <em>" + doc.journaltitle + "</em> ";
-    result += doc.volume;
-    if (doc.issue) {
-        result += ", no. " + doc.issue;
-    }
-
-    result += " (" + VIS.cite_date_format(doc.date) + "): ";
-    result += doc.pagerange + ".";
+    result += '<em>' + doc.title + '.</em> ';
+    result += bib.doc_author(doc).replace(/\.?$/, ". ");
+    result += "Developed by " + JSON.parse(JSON.stringify(doc.journaltitle.replace(/'/g, '').replace(/[\[\]']+/g, '')));
+    result += ". (" + VIS.cite_date_format(doc.date) + ")";
+    result += "<br><br><em>" + doc.volume + "</em><br>";
 
     result = result.replace(/\.\./g, ".");
     result = result.replace(/_/g, ",");
@@ -233,7 +191,7 @@ bib.parse = function (d) {
     return {
         doi: d[0].trim(), // id
         title: d[1].trim(),
-        authors: a_str === "" ? [] : a_str.split(VIS.bib.author_delimiter),
+        authors: [d[2].trim()],
         journaltitle: d[3].trim(),
         volume: d[4].trim(),
         issue: d[5].trim(),

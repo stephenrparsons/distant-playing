@@ -111,7 +111,7 @@ var VIS = {
         }
     },
     percent_format: d3.format(".1%"),
-    cite_date_format: d3.time.format.utc("%B %Y"), // JSTOR supplies UTC dates
+    cite_date_format: d3.time.format.utc("%Y"), // JSTOR supplies UTC dates
     uri_proxy: ""
 };
 
