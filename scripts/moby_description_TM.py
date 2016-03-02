@@ -1,7 +1,8 @@
 # Modified from https://github.com/vladsandulescu/topics
 
 from pymongo import MongoClient
-import nltk, time, logging, gensim
+import nltk, time, logging, gensim, json, StringIO, csv
+import zipfile as zf
 
 client = MongoClient()
 desc_collection = client['items']['moby_items']
@@ -31,7 +32,7 @@ def tag_descriptions():
                 words.append({'word': word, 'pos': tag})
 
         desc_collection.update_one({'_id': record['_id']}, {'$set': {'words': words}})
-    
+
         done += 1
         if done % 1000 == 0:
             end = time.time()
@@ -40,7 +41,7 @@ def tag_descriptions():
 def create_corpus():
     desc_cursor = desc_collection.find(modifiers={'$snapshot': True})
     desc_count = desc_cursor.count()
-    
+
     lem = nltk.stem.wordnet.WordNetLemmatizer()
 
     done = 0
@@ -126,30 +127,95 @@ class Predict():
         words_to_use = record['words_to_use']
         new_desc_bow = self.dictionary.doc2bow(words_to_use)
         new_desc_lda = self.lda[new_desc_bow]
-        
+
         return new_desc_lda
 
 def predict_topics():
     desc_cursor = desc_collection.find(modifiers={'$snapshot': True})
+    desc_count = desc_cursor.count()
     predict = Predict(dictionary_path, lda_model_path)
     lda = gensim.models.LdaModel.load(lda_model_path)
     dictionary = gensim.corpora.Dictionary.load(dictionary_path)
-    
+
+    done = 0
+    start = time.time()
+
     for record in desc_cursor:
-        print ''
-        print record['description']
-        print ''
-
         topics = predict.run(record)
-        topic_list = []
-        for (topic_id, topic_weight) in topics:
-            terms = lda.get_topic_terms(topic_id)
-            topic_list.append((topic_weight, [dictionary.get(term[0]) for term in terms]))
-        topic_list = sorted(topic_list, reverse=True)
-        for topic in topic_list:
-            print topic
 
-        x = raw_input()
+        # topic_list = []
+        # for (topic_id, topic_weight) in topics:
+        #     terms = lda.get_topic_terms(topic_id)
+        #     topic_list.append((topic_weight, [dictionary.get(term[0]) for term in terms]))
+        # topic_list = sorted(topic_list, reverse=True)
+        # for topic in topic_list:
+        #     print topic
+
+        desc_collection.update_one({'_id': record['_id']}, {'$set': {'topic_weights': topics}})
+
+        done += 1
+        if done % 1000 == 0:
+            end = time.time()
+            print 'Done ' + str(done) + ' out of ' + str(desc_count) + ' in ' + str((end - start))
+
+def output_vis_files():
+    desc_cursor = desc_collection.find(modifiers={'$snapshot': True})
+    desc_count = desc_cursor.count()
+    num_topics = 50.0
+    lda = gensim.models.LdaModel.load(lda_model_path)
+    dictionary = gensim.corpora.Dictionary.load(dictionary_path)
+
+    # tw.json
+    alpha = [1/num_topics for i in range(int(num_topics))]
+    tw = []
+    for topic_id in range(int(num_topics)):
+        terms = lda.get_topic_terms(topic_id)
+        words = [dictionary.get(term[0]) for term in terms]
+        weights = [term[1] for term in terms]
+        tw.append({'words': words, 'weights': weights})
+    
+    data = {'alpha': alpha, 'tw': tw}
+
+    with open('tw.json', 'w') as outfile:
+        json.dump(data, outfile)
+
+    # meta.csv
+    def clean(item):
+        if isinstance(item, unicode) or isinstance(item, str):
+            return item.encode('ascii', 'ignore').replace('"', '""').replace('\n', '').replace('\r', '').replace("'", '')
+        elif isinstance(item, list):
+            return str([clean(elem) for elem in item])
+        else:
+            return str(item)
+    
+    meta = []
+    for record in desc_cursor:
+        entry = [record['_id'], record['title'], record['publishedBy'], record['developedBy'], '', '', record['year'], '']
+        
+        meta.append([clean(item) for item in entry])
+
+    meta_out = ''
+    for entry in meta:
+        meta_out += '"' + '","'.join(entry) + '"\n'
+
+    with zf.ZipFile('meta.csv.zip', 'w') as z:
+        z.writestr('meta.csv', meta_out)
+
+    # dt.json.zip begins as dt.csv
+    desc_cursor = desc_collection.find(modifiers={'$snapshot': True})
+    dt = [[str(0) for i in range(int(num_topics))] for j in range(desc_count)]
+    i = 0
+    for record in desc_cursor:
+        topic_weights = record['topic_weights']
+        for topic_pair in topic_weights:
+            dt[i][topic_pair[0]] = str(int(topic_pair[1]*10000))
+        i += 1
+        
+    dt_out = ''
+    for doc_id in range(len(dt)):
+        dt_out += ','.join(dt[doc_id]) + '\n'
+    with open('dt.csv', 'w') as outfile:
+        outfile.write(dt_out)
 
 if __name__ == '__main__':
     logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
@@ -158,8 +224,9 @@ if __name__ == '__main__':
     lda_num_topics = 50
     lda_model_path = "models/lda_model_50_topics.lda"
 
-    # tag_descriptions()
-    # create_corpus()
-    # train_corpus()
-    # display_topics()
+    tag_descriptions()
+    create_corpus()
+    train_corpus()
+    display_topics()
     predict_topics()
+    output_vis_files()
