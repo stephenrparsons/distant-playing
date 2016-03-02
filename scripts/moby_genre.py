@@ -1,6 +1,7 @@
 from pymongo import MongoClient
 import numpy as np
 import matplotlib.pyplot as plt
+from cycler import cycler
 
 client = MongoClient()
 db = client['items']
@@ -19,6 +20,9 @@ def showGamesPerYear():
     games = [item[1] for item in gamesPerYear]
 
     fig, ax = plt.subplots(1)
+    ax.set_title('Games per year')
+    ax.set_ylabel('Games')
+    ax.set_xlabel('Year')
     ax.plot(years, games)
 
     fig.autofmt_xdate()
@@ -53,9 +57,26 @@ def showPercentagesOverTime(field):
 
     fig = plt.figure()
     ax = fig.add_axes([0.1, 0.1, 0.6, 0.75])
+    ax.set_prop_cycle(cycler('color', ['#8dd3c7','#ffffb3','#bebada','#fb8072','#80b1d3','#fdb462','#b3de69','#fccde5','#d9d9d9','#bc80bd','#ccebc5','#ffed6f']))
     y = np.row_stack(dataArray)
+
+    # sort by total for each field
+    sums = np.sum(y, axis=1)
+    indices = sums.argsort()[::-1]
+    y = np.take(y, indices, axis=0)
+
+    # make sure to sort labels how their fields were sorted
+    max_fields = 12
+    label_list = list(np.take(fields, indices))[0:max_fields]
+
+    # beyond n most significant fields, categorize as other
+    y, other = y[:max_fields], np.sum(y[max_fields:], axis=0)
+    if sum(other) != 0:
+        y = np.vstack([y, other])
+        label_list.append('other')
+
     percent = y / y.sum(axis=0).astype(float)*100
-    ax.stackplot(years, percent, labels=fields)
+    ax.stackplot(years, percent, labels=label_list)
     ax.margins(0,0)
     # move the upper left edge of the legend relative to axes
     # coordinates and reverse the label order
