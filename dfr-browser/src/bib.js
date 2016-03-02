@@ -171,6 +171,7 @@ bib.citation = function (doc) {
     result += bib.doc_author(doc).replace(/\.?$/, ". ");
     result += "Developed by " + JSON.parse(JSON.stringify(doc.journaltitle.replace(/'/g, '').replace(/[\[\]']+/g, '')));
     result += ". (" + VIS.cite_date_format(doc.date) + ")";
+    result += "<br><br><em>" + doc.volume + "</em><br>";
 
     result = result.replace(/\.\./g, ".");
     result = result.replace(/_/g, ",");
