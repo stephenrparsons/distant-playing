@@ -57,7 +57,7 @@ def showPercentagesOverTime(field):
 
     fig = plt.figure()
     ax = fig.add_axes([0.1, 0.1, 0.6, 0.75])
-    ax.set_prop_cycle(cycler('color', ['#8dd3c7','#ffffb3','#bebada','#fb8072','#80b1d3','#fdb462','#b3de69','#fccde5','#d9d9d9','#bc80bd','#ccebc5','#ffed6f']))
+    ax.set_prop_cycle(cycler('color', ['#8dd3c7','#ffffb3','#bebada','#fb8072','#80b1d3','#fdb462','#b3de69','#fccde5','#d9d9d9','#bc80bd', '#ffe8c7', '#ccebc5','#ffed6f']))
     y = np.row_stack(dataArray)
 
     # sort by total for each field
