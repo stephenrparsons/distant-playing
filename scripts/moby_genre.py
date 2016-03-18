@@ -7,6 +7,50 @@ client = MongoClient()
 db = client['items']
 collection = db['moby_items']
 
+# graph title lengths in words
+def showTitleLengths():
+    cursor = collection.find({}, {'title': True, 'year': True}, modifiers={'$snapshot': True})
+
+    titleLengthsByYear = {}
+
+    for record in cursor:
+        numWords = len(record['title'].split())
+        if record['year'] in titleLengthsByYear.keys():
+            titleLengthsByYear[record['year']].append(numWords)
+        else:
+            titleLengthsByYear[record['year']] = [numWords]
+
+    for year in titleLengthsByYear.keys():
+        lengths = titleLengthsByYear[year]
+        titleLengthsByYear[year] = {'average': float(sum(lengths)) / len(lengths), 'std_dev': np.std(titleLengthsByYear[year])}
+
+    averageLengthByYear = sorted([[int(year), titleLengthsByYear[year]['average'], titleLengthsByYear[year]['std_dev']] for year in titleLengthsByYear.keys()])
+
+    years = [item[0] for item in averageLengthByYear]
+    averageLengths = [item[1] for item in averageLengthByYear]
+    std_devs = [item[2] for item in averageLengthByYear]
+
+    fig, ax = plt.subplots(1)
+    ax.set_title('Average title length in words by year')
+    ax.set_ylabel('Average title length')
+    ax.set_xlabel('Year')
+    ax.plot(years, averageLengths)
+
+    fig.autofmt_xdate()
+
+    plt.show()
+
+    fig, ax = plt.subplots(1)
+
+    ax.set_title('Standard deviation of title length in words by year')
+    ax.set_ylabel('Title length std_dev')
+    ax.set_xlabel('Year')
+    ax.plot(years, std_devs)
+
+    fig.autofmt_xdate()
+
+    plt.show()
+
 # graph games per year
 def showGamesPerYear():
     cursor = collection.aggregate([
@@ -96,6 +140,7 @@ def showPercentagesOverTime(field):
 # showPercentagesOverTime('developedBy')
 
 showGamesPerYear()
+showTitleLengths()
 showPercentagesOverTime('genre')
 showPercentagesOverTime('theme')
 showPercentagesOverTime('perspective')
