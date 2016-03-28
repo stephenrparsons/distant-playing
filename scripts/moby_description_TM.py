@@ -50,7 +50,7 @@ def create_corpus():
     for record in desc_cursor:
         words_to_use = []
         # select only nouns
-        words = [word for word in record['words'] if word['pos'] in ['NN', 'NNS']]
+        words = [word for word in record['words'] if (word['pos'] in ['NN', 'NNS'] or 'VB' in word['pos'])]
 
         for word in words:
             words_to_use.append(lem.lemmatize(word['word']))
